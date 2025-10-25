@@ -1,3 +1,6 @@
+![docs.rs](https://img.shields.io/docsrs/only_one)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/przb/only-one/rust.yml)
+
 # Only One
 Extra functionality to reduce nesting with result chaining.
 
