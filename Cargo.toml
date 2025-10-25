@@ -8,6 +8,7 @@ description = "Provides the OnlyOne trait, which allows less nesting when chaini
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
+documentation = "https://docs.rs/only_one"
 repository = "https://github.com/przb/only-one"
 keywords = ["error", "result", "chaining", "nested"]
 categories = ["rust-patterns", "no-std", "no-std::no-alloc"]
