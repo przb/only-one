@@ -40,7 +40,6 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(warnings)]
     use std::io::Read;
 
     use crate::OnlyOne;
@@ -62,36 +61,6 @@ mod tests {
             }
         }
 
-        fn idk_dude(_x: u32) -> Result<u32, IdkError> {
-            Ok(0)
-        }
-        pub fn foo() -> Result<usize, IdkError> {
-            let f = std::fs::File::open("b");
-            if let Ok(mut f) = f {
-                let mut buf = vec![];
-                let f2 = f.read_vectored(&mut buf);
-                if let Ok(size) = f2 {
-                    let array = buf.get(0..size).ok_or(IdkError);
-                    Ok(array.iter().count())
-                } else {
-                    Err(IdkError)
-                }
-            } else {
-                Err(IdkError)
-            }
-        }
-
-        pub fn fooq() -> Result<usize, IdkError> {
-            let mut f = std::fs::File::open("b")?;
-
-            let mut buf = vec![];
-            let size = f.read_vectored(&mut buf)?;
-
-            let array = buf.get(0..size).ok_or(IdkError)?;
-
-            Ok(array.iter().count())
-        }
-
         pub fn foo_o() -> Result<usize, IdkError> {
             let mut buf = vec![];
             let v = std::fs::File::open("b")
@@ -103,7 +72,6 @@ mod tests {
             Ok(v)
         }
 
-        // let x = 4;
-        // if x > 4 { Ok(()) } else { Err(IdkError) }
+        let _ = foo_o();
     }
 }
