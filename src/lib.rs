@@ -40,7 +40,7 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
+    use std::{io::Read, string::FromUtf8Error};
 
     use crate::OnlyOne;
 
@@ -73,5 +73,79 @@ mod tests {
         }
 
         let _ = foo_o();
+    }
+
+    #[test]
+    fn two() {
+        struct TwoError;
+        impl From<std::io::Error> for TwoError {
+            fn from(_e: std::io::Error) -> Self {
+                TwoError
+            }
+        }
+
+        fn no_chain() -> Result<usize, TwoError> {
+            let path = "src/main.rs";
+            let mut v = vec![];
+            let f = std::fs::exists(path)?;
+            if f {
+                if let Ok(mut file) = std::fs::File::open(path) {
+                    if let Ok(read) = file.read_to_end(&mut v) {
+                        if let Some(bytes) = v.get(0..read) {
+                            let v = Vec::from(bytes);
+                            if let Ok(s) = String::from_utf8(v) {
+                                Ok(s.lines().count())
+                            } else {
+                                Err(TwoError)
+                            }
+                        } else {
+                            Err(TwoError)
+                        }
+                    } else {
+                        Err(TwoError)
+                    }
+                } else {
+                    Err(TwoError)
+                }
+            } else {
+                Err(TwoError)
+            }
+        }
+
+        fn use_try() -> Result<usize, TwoError> {
+            let path = "src/main.rs";
+            let mut v = vec![];
+            let f = std::fs::exists(path)?;
+            if f {
+                let mut file = std::fs::File::open(path)?;
+                let read = file.read_to_end(&mut v)?;
+                let bytes = v.get(0..read).ok_or(TwoError)?;
+                let v = Vec::from(bytes);
+                let s = String::from_utf8(v).map_err(|_| TwoError)?;
+                Ok(s.lines().count())
+            } else {
+                Err(TwoError)
+            }
+        }
+
+        fn chain() -> Result<usize, TwoError> {
+            let path = "src/main.rs";
+            let mut v = vec![];
+            if let Ok(f) = std::fs::exists(path)
+                && f
+            {
+                std::fs::File::open(path)
+                    .map_err(|_| TwoError)
+                    .only(|mut file| file.read_to_end(&mut v))
+                    .only_or(|read| v.get(0..read), TwoError)
+                    .only(|bytes| {
+                        let v = Vec::from(bytes);
+                        String::from_utf8(v).map_err(|_| TwoError)
+                    })
+                    .map(|s| s.lines().count())
+            } else {
+                Err(TwoError)
+            }
+        }
     }
 }
