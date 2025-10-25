@@ -1,14 +1,19 @@
 [package]
-name = "only-one"
+name = "only_one"
 version = "0.1.0"
 edition = "2024"
-description = "Provides the OnlyOne trait, which allows less nesting when chaining Results"
-license = "MIT/Apache-2.0"
+
+authors = ["Ben Przybyszewski "]
+description = "Provides the OnlyOne trait, which allows less nesting when chaining results"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+
 repository = "https://github.com/przb/only-one"
 keywords = ["error", "result", "chaining", "nested"]
 categories = ["rust-patterns", "no-std", "no-std::no-alloc"]
-
 exclude = [".gitignore"]
+
+[dependencies]
 
 [dev-dependencies]
 thiserror = "2.0.17"
