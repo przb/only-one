@@ -1,11 +1,77 @@
-// #![no_std]
+//!
+//! A Crate that defines the [`OnlyOne`] trait. This traits allows for result chaining in a
+//! way that reduces nesting
+//!
+//! # Example
+//!
+//! This is a contrived example, because realistically you would just call `std::fs::read_to_string`.
+//!
+//! ```
+//! # use std::io::Read;
+//! use only_one::OnlyOne;
+//!
+//! #[derive(Debug, PartialEq, thiserror::Error)]
+//! #[error(":shrug:")]
+//! struct SomeError;
+//!
+//! impl From<std::io::Error> for SomeError {
+//!     fn from(_e: std::io::Error) -> Self {
+//!         SomeError
+//!     }
+//! }
+//!
+//!
+//! /// This function is equivalent to `chain`
+//! fn question_mark() -> Result<usize, SomeError> {
+//!     let path = "src/main.rs";
+//!     let mut v = vec![];
+//!     let f = std::fs::exists(path)?;
+//!     if f {
+//!         let mut file = std::fs::File::open(path)?;
+//!         let read = file.read_to_end(&mut v)?;
+//!         let bytes = v.get(0..read).ok_or(SomeError)?;
+//!         let v = Vec::from(bytes);
+//!         let s = String::from_utf8(v).map_err(|_| SomeError)?;
+//!         Ok(s.lines().count())
+//!     } else {
+//!         Err(SomeError)
+//!     }
+//! }
+//!
+//! fn chain() -> Result<usize, SomeError> {
+//!     let path = "src/main.rs";
+//!     let mut v = vec![];
+//!     if let Ok(f) = std::fs::exists(path)
+//!         && f
+//!     {
+//!         std::fs::File::open(path)
+//!             .map_err(|_| SomeError)
+//!             .only(|mut file| file.read_to_end(&mut v))
+//!             .only_or(|read| v.get(0..read), SomeError)
+//!             .only(|bytes| {
+//!                 let v = Vec::from(bytes);
+//!                 String::from_utf8(v).map_err(|_| SomeError)
+//!             })
+//!             .map(|s| s.lines().count())
+//!     } else {
+//!         Err(SomeError)
+//!     }
+//! }
+//!
+//! assert_eq!(question_mark(), chain());
+//! ```
+
+#![cfg_attr(not(test), no_std)]
 
 pub trait OnlyOne<T> {
     type Error;
+    /// Executes the closure if and only if `self` is `Ok`. If `self` is `Err`, then does not execute following chains.
     fn only<U, G>(self, f: impl FnOnce(T) -> Result<U, G>) -> Result<U, Self::Error>
     where
         G: Into<Self::Error>,
         Self: Sized;
+
+    /// Executes the closure if and only if `self` is `Some`. If `self` is `None`, returns `e`.
     fn only_or<U>(self, f: impl FnOnce(T) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
     where
         Self: Sized;
