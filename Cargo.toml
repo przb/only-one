@@ -3,6 +3,6 @@ name = "only-one"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
+[dev-dependencies]
 thiserror = "2.0.17"
 

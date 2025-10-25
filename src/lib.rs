@@ -13,6 +13,7 @@ pub trait OnlyOne<T> {
 
 impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
     type Error = Bad;
+    #[inline]
     fn only<U, G>(self, f: impl FnOnce(Good) -> Result<U, G>) -> Result<U, Self::Error>
     where
         G: Into<Self::Error>,
@@ -27,6 +28,7 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
         }
     }
 
+    #[inline]
     fn only_or<U>(self, f: impl FnOnce(Good) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
     where
         Self: Sized,
@@ -40,7 +42,7 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
 
 #[cfg(test)]
 mod tests {
-    use std::{io::Read, string::FromUtf8Error};
+    use std::io::Read;
 
     use crate::OnlyOne;
 
@@ -77,14 +79,17 @@ mod tests {
 
     #[test]
     fn two() {
+        #[derive(Debug, PartialEq, thiserror::Error)]
+        #[error(":shrug:")]
         struct TwoError;
+
         impl From<std::io::Error> for TwoError {
             fn from(_e: std::io::Error) -> Self {
                 TwoError
             }
         }
 
-        fn no_chain() -> Result<usize, TwoError> {
+        fn nest() -> Result<usize, TwoError> {
             let path = "src/main.rs";
             let mut v = vec![];
             let f = std::fs::exists(path)?;
@@ -112,7 +117,7 @@ mod tests {
             }
         }
 
-        fn use_try() -> Result<usize, TwoError> {
+        fn r#try() -> Result<usize, TwoError> {
             let path = "src/main.rs";
             let mut v = vec![];
             let f = std::fs::exists(path)?;
@@ -147,5 +152,8 @@ mod tests {
                 Err(TwoError)
             }
         }
+
+        assert_eq!(nest(), chain());
+        assert_eq!(r#try(), chain());
     }
 }
