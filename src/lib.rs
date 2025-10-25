@@ -4,39 +4,40 @@ use std::io::Read;
 
 pub trait OnlyOne<T> {
     type Error;
-    fn only<U, E, F>(self, f: F) -> Result<U, Self::Error>
+    fn only<U, G>(self, f: impl FnOnce(T) -> Result<U, G>) -> Result<U, Self::Error>
     where
-        E: Into<Self::Error>,
-        F: FnOnce(T) -> Result<U, Self::Error>,
+        G: Into<Self::Error>,
         Self: Sized;
-    // fn finally<U>(self) -> Result<U, Self::Error>
-    // where
-    //     T: Into<U>;
+    fn only_or<U>(self, f: impl FnOnce(T) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
+    where
+        Self: Sized;
 }
 
 impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
     type Error = Bad;
-
-    fn only<U, E, F>(self, f: F) -> Result<U, Self::Error>
+    fn only<U, G>(self, f: impl FnOnce(Good) -> Result<U, G>) -> Result<U, Self::Error>
     where
-        E: Into<Self::Error>,
-        F: FnOnce(Good) -> Result<U, Self::Error>,
+        G: Into<Self::Error>,
         Self: Sized,
     {
         match self {
-            Ok(o) => f(o),
+            Ok(o) => match f(o) {
+                Ok(v) => Ok(v),
+                Err(e) => Err(e.into()),
+            },
             Err(e) => Err(e.into()),
         }
     }
-    // fn finally<U>(self) -> Result<U, Self::Error>
-    // where
-    //     Good: Into<U>,
-    // {
-    //     match self {
-    //         Ok(v) => Ok(v.into()),
-    //         Err(e) => Err(e.into()),
-    //     }
-    // }
+
+    fn only_or<U>(self, f: impl FnOnce(Good) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
+    where
+        Self: Sized,
+    {
+        match self {
+            Ok(v) => f(v).ok_or(e),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 pub fn foo() -> Result<usize, IdkError> {
@@ -45,7 +46,7 @@ pub fn foo() -> Result<usize, IdkError> {
         let mut buf = vec![];
         let f2 = f.read_vectored(&mut buf);
         if let Ok(size) = f2 {
-            let array = buf.get(0..size).unwrap();
+            let array = buf.get(0..size).ok_or(IdkError);
             Ok(array.iter().count())
         } else {
             Err(IdkError)
@@ -61,19 +62,33 @@ pub fn fooq() -> Result<usize, IdkError> {
     let mut buf = vec![];
     let size = f.read_vectored(&mut buf)?;
 
-    let array = buf.get(0..size).unwrap();
+    let array = buf.get(0..size).ok_or(IdkError)?;
 
     Ok(array.iter().count())
 }
 
-pub fn foo_o() -> Result<usize, IdkError> {
+#[derive(Debug, thiserror::Error)]
+#[error("idk")]
+struct FooError;
+impl From<IdkError> for FooError {
+    fn from(_value: IdkError) -> Self {
+        FooError
+    }
+}
+impl From<std::io::Error> for FooError {
+    fn from(_value: std::io::Error) -> Self {
+        FooError
+    }
+}
+
+pub fn foo_o() -> Result<usize, FooError> {
     let mut buf = vec![];
-    let x = std::fs::File::open("b")
+    let v = std::fs::File::open("b")
         .only(|mut f| f.read_vectored(&mut buf))
-        .only(|size| {
-            let array = buf.get(0..size).unwrap();
-            Ok(array.iter().count())
-        })
+        .only_or(|size| buf.get(0..size), std::io::Error::other(FooError))
+        .map(|a| a.iter().count())
+        .unwrap_or_default();
+    Ok(v)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -82,6 +97,11 @@ pub struct IdkError;
 
 impl From<std::io::Error> for IdkError {
     fn from(_io_err: std::io::Error) -> Self {
+        IdkError
+    }
+}
+impl From<std::io::ErrorKind> for IdkError {
+    fn from(_io_err: std::io::ErrorKind) -> Self {
         IdkError
     }
 }
