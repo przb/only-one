@@ -1,11 +1,8 @@
-//!
 //! A Crate that defines the [`OnlyOne`] trait. This traits allows for result chaining in a
 //! way that reduces nesting
 //!
-//! # Example
-//!
+//! # Examples
 //! This is a contrived example, because realistically you would just call [`std::fs::read_to_string`].
-//!
 //! ```
 //! # use std::io::Read;
 //! use only_one::OnlyOne;
@@ -72,12 +69,16 @@ pub trait OnlyOne<T> {
     type Error;
     /// Executes the closure if and only if `self` is `Ok`. If `self` is `Err`, then this function does
     /// not execute any following chains.
+    ///
+    /// See the [module docs](crate) for examples.
     fn only<U, G>(self, f: impl FnOnce(T) -> Result<U, G>) -> Result<U, Self::Error>
     where
         G: Into<Self::Error>,
         Self: Sized;
 
     /// Executes the closure if and only if `self` is `Some`. If `self` is `None`, returns `e`.
+    ///
+    /// See the [module docs](crate) for examples.
     fn only_or<U>(self, f: impl FnOnce(T) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
     where
         Self: Sized;
