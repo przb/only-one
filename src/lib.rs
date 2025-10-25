@@ -97,7 +97,7 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
                 Ok(v) => Ok(v),
                 Err(e) => Err(e.into()),
             },
-            Err(e) => Err(e.into()),
+            Err(e) => Err(e),
         }
     }
 
