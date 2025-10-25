@@ -4,7 +4,7 @@
 //!
 //! # Example
 //!
-//! This is a contrived example, because realistically you would just call `std::fs::read_to_string`.
+//! This is a contrived example, because realistically you would just call [`std::fs::read_to_string`].
 //!
 //! ```
 //! # use std::io::Read;
@@ -19,7 +19,6 @@
 //!         SomeError
 //!     }
 //! }
-//!
 //!
 //! /// This function is equivalent to `chain`
 //! fn question_mark() -> Result<usize, SomeError> {
@@ -61,11 +60,18 @@
 //! assert_eq!(question_mark(), chain());
 //! ```
 
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(all(not(test), not(doc)), no_std)]
 
+/// A trait that makes it easier to reduce nesting when chaining results.
+///
+/// This is similar using the [`std::result::Result`]'s [`and_then`](std::result::Result::and_then) and
+/// [`map`](std::result::Result::map), but in a way that reduces nesting
 pub trait OnlyOne<T> {
+    /// The error type that will be returned. All generics for the functions in this trait must implement
+    /// [`Into`] for this error type.
     type Error;
-    /// Executes the closure if and only if `self` is `Ok`. If `self` is `Err`, then does not execute following chains.
+    /// Executes the closure if and only if `self` is `Ok`. If `self` is `Err`, then this function does
+    /// not execute any following chains.
     fn only<U, G>(self, f: impl FnOnce(T) -> Result<U, G>) -> Result<U, Self::Error>
     where
         G: Into<Self::Error>,
