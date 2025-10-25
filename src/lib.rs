@@ -63,7 +63,7 @@ mod tests {
             }
         }
 
-        pub fn foo_o() -> Result<usize, IdkError> {
+        pub fn only() -> Result<usize, IdkError> {
             let mut buf = vec![];
             let v = std::fs::File::open("b")
                 .map_err(|_| IdkError)
@@ -74,11 +74,11 @@ mod tests {
             Ok(v)
         }
 
-        let _ = foo_o();
+        let _ = only().unwrap();
     }
 
     #[test]
-    fn two() {
+    fn try_count_lines_in_file() {
         #[derive(Debug, PartialEq, thiserror::Error)]
         #[error(":shrug:")]
         struct TwoError;
