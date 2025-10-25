@@ -1,5 +1,5 @@
-![docs.rs](https://img.shields.io/docsrs/only_one)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/przb/only-one/rust.yml)
+[<img alt="docs.rs" src="https://img.shields.io/docsrs/only_one" height="20">](https://docs.rs/only_one)
+[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/przb/only-one/rust.yml" height="20">](https://github.com/przb/only-one/actions)
 
 # Only One
 Extra functionality to reduce nesting with result chaining.
