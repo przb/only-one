@@ -7,7 +7,7 @@ Extra functionality to reduce nesting with result chaining.
 How to use with Cargo:
 ```toml
 [dependencies]
-only_one = "0.1.0"
+only_one = "1.0.0"
 ```
 
 How to use in your crate:
