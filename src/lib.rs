@@ -138,12 +138,11 @@ pub trait OnlyOne<T> {
     /// impl SomeError {
     ///   fn new(msg: &str) -> Self { SomeError(String::from(msg)) }
     /// }
+    ///
     /// fn fallible_fn(val: usize) -> Result<usize, SomeError> {
     ///   // Some logic ...
-    ///
     ///   Ok(val * 2)
     /// }
-    ///
     ///
     /// let s = &[1,2,3,4,5];
     ///
