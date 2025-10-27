@@ -70,7 +70,43 @@ pub trait OnlyOne<T> {
     /// Executes the closure if and only if `self` is `Ok`. If `self` is `Err`, then this function does
     /// not execute any following chains.
     ///
-    /// See the [module docs](crate) for examples.
+    /// # Examples
+    /// See the [module docs](crate) for more examples.
+    ///
+    /// ```
+    /// # use only_one::OnlyOne;
+    /// # #[derive(Clone, Eq, PartialEq, Debug)]
+    /// struct SomeError;
+    /// # #[derive(Clone, Eq, PartialEq, Debug)]
+    /// struct SomeOtherError;
+    ///
+    /// impl From<SomeOtherError> for SomeError {
+    ///   fn from(other: SomeOtherError) -> Self { Self }
+    /// }
+    ///
+    /// fn fallible_fn(val: usize) -> Result<usize, SomeError> {
+    ///   // Some logic ...
+    ///   Ok(val * 2)
+    /// }
+    ///
+    /// fn other_fallible_fn(val: usize) -> Result<usize, SomeOtherError> {
+    ///   // Some logic ...
+    ///   Ok(val / 2)
+    /// }
+    ///
+    /// let item = fallible_fn(4)
+    ///              // note the following functions return `SomeOtherError`, not `SomeError`. But
+    ///              // this is allowed since `SomeOtherError` can be converted into `SomeError`.
+    ///              .only(other_fallible_fn)
+    ///              .only(|val| if val < 100 { Ok(val / 4) } else { Err(SomeOtherError) } )
+    ///              // You can still chain `only` with a type that returns `Self::Error`
+    ///              .only(fallible_fn)
+    ///              // But it would be the same as doing the following:
+    ///              .and_then(fallible_fn);
+    ///
+    /// assert_eq!(Ok(4), item);
+    ///
+    /// ```
     fn only<U, G>(self, f: impl FnOnce(T) -> Result<U, G>) -> Result<U, Self::Error>
     where
         G: Into<Self::Error>,
@@ -78,9 +114,53 @@ pub trait OnlyOne<T> {
 
     /// Executes the closure if and only if `self` is `Some`. If `self` is `None`, returns `e`.
     ///
+    /// Since this is eagerly evaluated, it should only be with trivially constructed `error`s.
+    ///
     /// See the [module docs](crate) for examples.
-    fn only_or<U>(self, f: impl FnOnce(T) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
+    fn only_or<U>(
+        self,
+        f: impl FnOnce(T) -> Option<U>,
+        error: Self::Error,
+    ) -> Result<U, Self::Error>
     where
+        Self: Sized;
+
+    /// Executes the closure if and only if `self` is `Some`. If `self` is `None`, returns the result of
+    /// calling `e`.
+    ///
+    /// Since this is lazily evaluated, it should be preferred when using any non-trivially constructed values,
+    /// such as calling any functions to create an error.
+    ///
+    /// # Examples
+    /// ```
+    /// # use only_one::OnlyOne;
+    /// struct SomeError(String);
+    /// impl SomeError {
+    ///   fn new(msg: &str) -> Self { SomeError(String::from(msg)) }
+    /// }
+    ///
+    /// fn fallible_fn(val: usize) -> Result<usize, SomeError> {
+    ///   // Some logic ...
+    ///   Ok(val * 2)
+    /// }
+    ///
+    /// let s = &[1,2,3,4,5];
+    ///
+    /// let item = fallible_fn(4)
+    ///              .only_ok_or_else(|i| s.get(i), || SomeError::new("Didn't get the index"));
+    ///
+    /// assert!(item.is_err());
+    ///
+    /// ```
+    ///
+    /// See the [module docs](crate) for examples.
+    fn only_ok_or_else<U, E>(
+        self,
+        f: impl FnOnce(T) -> Option<U>,
+        e: impl Fn() -> E,
+    ) -> Result<U, Self::Error>
+    where
+        E: Into<Self::Error>,
         Self: Sized;
 }
 
@@ -102,12 +182,32 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
     }
 
     #[inline]
-    fn only_or<U>(self, f: impl FnOnce(Good) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
+    fn only_or<U>(
+        self,
+        f: impl FnOnce(Good) -> Option<U>,
+        error: Self::Error,
+    ) -> Result<U, Self::Error>
     where
         Self: Sized,
     {
         match self {
-            Ok(v) => f(v).ok_or(e),
+            Ok(v) => f(v).ok_or(error),
+            Err(e) => Err(e),
+        }
+    }
+
+    #[inline]
+    fn only_ok_or_else<U, E>(
+        self,
+        f: impl FnOnce(Good) -> Option<U>,
+        e: impl Fn() -> E,
+    ) -> Result<U, Self::Error>
+    where
+        Self: Sized,
+        E: Into<Self::Error>,
+    {
+        match self {
+            Ok(v) => f(v).ok_or_else(|| e().into()),
             Err(e) => Err(e),
         }
     }

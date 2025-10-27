@@ -1,6 +1,6 @@
 [package]
 name = "only_one"
-version = "0.1.0"
+version = "1.0.0-alpha"
 edition = "2024"
 
 authors = ["Ben Przybyszewski "]
@@ -10,7 +10,7 @@ readme = "README.md"
 
 documentation = "https://docs.rs/only_one"
 repository = "https://github.com/przb/only-one"
-keywords = ["error", "result", "chaining", "nested"]
+keywords = ["error", "result", "chaining", "nested", "one-return"]
 categories = ["rust-patterns", "no-std", "no-std::no-alloc"]
 exclude = [".gitignore"]
 
