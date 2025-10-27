@@ -124,6 +124,45 @@ pub trait OnlyOne<T> {
     ) -> Result<U, Self::Error>
     where
         Self: Sized;
+
+    /// Executes the closure if and only if `self` is `Some`. If `self` is `None`, returns the result of
+    /// calling `e`.
+    ///
+    /// Since this is lazily evaluated, it should be preferred when using any non-trivially constructed values,
+    /// such as calling any functions to create an error.
+    ///
+    /// # Examples
+    /// ```
+    /// # use only_one::OnlyOne;
+    /// struct SomeError(String);
+    /// impl SomeError {
+    ///   fn new(msg: &str) -> Self { SomeError(String::from(msg)) }
+    /// }
+    /// fn fallible_fn(val: usize) -> Result<usize, SomeError> {
+    ///   // Some logic ...
+    ///
+    ///   Ok(val * 2)
+    /// }
+    ///
+    ///
+    /// let s = &[1,2,3,4,5];
+    ///
+    /// let item = fallible_fn(4)
+    ///              .only_ok_or_else(|i| s.get(i), || SomeError::new("Didn't get the index"));
+    ///
+    /// assert!(item.is_err());
+    ///
+    /// ```
+    ///
+    /// See the [module docs](crate) for examples.
+    fn only_ok_or_else<U, E>(
+        self,
+        f: impl FnOnce(T) -> Option<U>,
+        e: impl Fn() -> E,
+    ) -> Result<U, Self::Error>
+    where
+        E: Into<Self::Error>,
+        Self: Sized;
 }
 
 impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
@@ -154,6 +193,22 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
     {
         match self {
             Ok(v) => f(v).ok_or(error),
+            Err(e) => Err(e),
+        }
+    }
+
+    #[inline]
+    fn only_ok_or_else<U, E>(
+        self,
+        f: impl FnOnce(Good) -> Option<U>,
+        e: impl Fn() -> E,
+    ) -> Result<U, Self::Error>
+    where
+        Self: Sized,
+        E: Into<Self::Error>,
+    {
+        match self {
+            Ok(v) => f(v).ok_or_else(|| e().into()),
             Err(e) => Err(e),
         }
     }
