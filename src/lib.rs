@@ -114,8 +114,14 @@ pub trait OnlyOne<T> {
 
     /// Executes the closure if and only if `self` is `Some`. If `self` is `None`, returns `e`.
     ///
+    /// Since this is eagerly evaluated, it should only be with trivially constructed `error`s.
+    ///
     /// See the [module docs](crate) for examples.
-    fn only_or<U>(self, f: impl FnOnce(T) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
+    fn only_or<U>(
+        self,
+        f: impl FnOnce(T) -> Option<U>,
+        error: Self::Error,
+    ) -> Result<U, Self::Error>
     where
         Self: Sized;
 }
@@ -138,12 +144,16 @@ impl<Good, Bad> OnlyOne<Good> for Result<Good, Bad> {
     }
 
     #[inline]
-    fn only_or<U>(self, f: impl FnOnce(Good) -> Option<U>, e: Self::Error) -> Result<U, Self::Error>
+    fn only_or<U>(
+        self,
+        f: impl FnOnce(Good) -> Option<U>,
+        error: Self::Error,
+    ) -> Result<U, Self::Error>
     where
         Self: Sized,
     {
         match self {
-            Ok(v) => f(v).ok_or(e),
+            Ok(v) => f(v).ok_or(error),
             Err(e) => Err(e),
         }
     }
